@@ -41,7 +41,7 @@ dependencies = [
 usql = "usql.cli:main"
 
 [project.urls]
-Repository = "https://github.com/cognica-io/usql"
+Repository = "https://github.com/cognica-io/usqldb"
 
 [tool.ruff]
 target-version = "py312"

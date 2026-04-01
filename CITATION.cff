@@ -7,7 +7,7 @@ authors:
     family-names: Jeong
     email: jaepil@cognica.io
     affiliation: "Cognica, Inc."
-repository-code: "https://github.com/cognica-io/usql"
+repository-code: "https://github.com/cognica-io/usqldb"
 license: AGPL-3.0-only
 version: 0.1.0
 date-released: "2026-04-01"
