@@ -39,6 +39,7 @@ dependencies = [
 
 [project.scripts]
 usqldb = "usqldb.cli:main"
+usqldb-server = "usqldb.net.pgwire.server:main"
 
 [project.urls]
 Repository = "https://github.com/cognica-io/usqldb"
