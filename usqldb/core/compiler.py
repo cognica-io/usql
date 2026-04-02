@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from pglast.ast import RangeVar
 from uqa.sql.compiler import SQLCompiler, SQLResult
 
 from usqldb.pg_compat.information_schema import InformationSchemaProvider
@@ -81,6 +82,84 @@ class USQLCompiler(SQLCompiler):
         if self._oid_allocator is None:
             self._oid_allocator = OIDAllocator(self._engine)
         return self._oid_allocator
+
+    # ------------------------------------------------------------------
+    # Override: unqualified catalog name resolution
+    # ------------------------------------------------------------------
+
+    # pg_catalog tables that can be referenced without schema prefix,
+    # matching PostgreSQL's implicit pg_catalog search_path behavior.
+    _PG_CATALOG_NAMES: frozenset[str] = frozenset(PGCatalogProvider.supported_tables())
+
+    # information_schema views that can be referenced without prefix.
+    _INFO_SCHEMA_NAMES: frozenset[str] = frozenset(
+        InformationSchemaProvider.supported_views()
+    )
+
+    def _resolve_from_single(  # type: ignore[override]
+        self, node: Any
+    ) -> tuple[Table | None, Any, str | None]:
+        """Resolve a single FROM item with implicit catalog lookup.
+
+        When a table name has no schema qualifier and does not exist
+        as a user table, view, foreign table, or CTE, try resolving it
+        against pg_catalog (for ``pg_`` prefixed names) and then
+        information_schema before raising an error.  This matches
+        PostgreSQL's behavior where ``pg_catalog`` is always on the
+        search path.
+        """
+        if isinstance(node, RangeVar) and node.schemaname is None:
+            name = node.relname
+            # Only intercept if the name is not a user-defined object.
+            if (
+                name not in self._engine._tables
+                and name not in self._engine._views
+                and name not in self._engine._foreign_tables
+                and name not in self._inlined_ctes
+            ):
+                if name in self._PG_CATALOG_NAMES:
+                    alias = node.alias.aliasname if node.alias is not None else name
+                    tbl, op = self._build_pg_catalog_table(name)
+                    return tbl, op, alias
+                if name in self._INFO_SCHEMA_NAMES:
+                    alias = node.alias.aliasname if node.alias is not None else name
+                    tbl, op = self._build_information_schema_table(name)
+                    return tbl, op, alias
+
+        return super()._resolve_from_single(node)
+
+    @staticmethod
+    def _walk_ast_for_tables(node: Any, refs: set[str], ast_base: type) -> None:
+        """Walk the AST to find table references, excluding catalogs.
+
+        Extends the base implementation to also exclude unqualified
+        pg_catalog and information_schema names so they are not treated
+        as missing user tables.
+        """
+        if node is None:
+            return
+        if isinstance(node, RangeVar):
+            if node.schemaname in ("information_schema", "pg_catalog"):
+                return
+            # Skip unqualified names that match known catalog objects.
+            if node.schemaname is None and (
+                node.relname in USQLCompiler._PG_CATALOG_NAMES
+                or node.relname in USQLCompiler._INFO_SCHEMA_NAMES
+            ):
+                return
+            if node.relname is not None:
+                refs.add(node.relname)
+            return
+        if isinstance(node, (list, tuple)):
+            for item in node:
+                USQLCompiler._walk_ast_for_tables(item, refs, ast_base)
+            return
+        if not isinstance(node, ast_base):
+            return
+        for attr in node.__slots__:
+            child = getattr(node, attr, None)
+            if child is not None:
+                USQLCompiler._walk_ast_for_tables(child, refs, ast_base)
 
     # ------------------------------------------------------------------
     # Override: information_schema
