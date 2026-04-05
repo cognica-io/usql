@@ -191,7 +191,7 @@ class QueryExecutor:
         if not stripped:
             return []
         try:
-            return list(split(stripped))
+            return [str(s) for s in split(stripped)]
         except Exception:
             # If pglast cannot parse, return the whole string.
             return [stripped]
