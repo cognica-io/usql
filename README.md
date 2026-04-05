@@ -15,7 +15,7 @@ usqldb extends the UQA SQL engine with a comprehensive set of PostgreSQL system 
 ## Requirements
 
 - Python 3.12+
-- UQA >= 0.25.2
+- UQA >= 0.25.3
 
 ## Installation
 

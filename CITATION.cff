@@ -9,7 +9,7 @@ authors:
     affiliation: "Cognica, Inc."
 repository-code: "https://github.com/cognica-io/usqldb"
 license: AGPL-3.0-only
-version: 0.2.0
+version: 0.2.1
 date-released: "2026-04-05"
 abstract: >-
   PostgreSQL 17-compatible layer for UQA providing system catalogs,

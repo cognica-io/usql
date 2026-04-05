@@ -7,7 +7,7 @@ include = ["usqldb*"]
 
 [project]
 name = "usqldb"
-version = "0.2.0"
+version = "0.2.1"
 description = "PostgreSQL 17-compatible layer for UQA --- system catalogs, psql-style CLI, and wire protocol server"
 license = "AGPL-3.0-only"
 requires-python = ">=3.12"
@@ -37,7 +37,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "uqa>=0.25.2",
+    "uqa>=0.25.3",
 ]
 
 [project.scripts]
